@@ -1,0 +1,9 @@
+- hosts: sonarqube
+  become: true
+  tasks:
+
+    - name: update
+      apt: update_cache=yes   
+   
+    - name: Install OpenJDK
+      apt: name=openjdk-11-jdk state=latest

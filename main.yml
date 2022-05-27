@@ -1,0 +1,11 @@
+- hosts: sonarqube
+  tasks:
+
+- name: Play JDK
+  import_playbook: jdk.yml
+
+- name: Play Postgresql
+  import_playbook: postgres.yml
+
+- name: Play Sonarqube
+  import_playbook: sonarqube.yml

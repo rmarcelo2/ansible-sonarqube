@@ -1,0 +1,110 @@
+- hosts: sonarqube
+  become: true
+  tasks:
+
+    - name: Install Packages Required
+      apt: 
+        name: 
+          - unzip 
+          - wget
+        state: latest
+
+    - name: Create SonarQube system group
+      group:
+        name: "sonar"
+        state: present
+
+    - name: Create SonarQube system user
+      user:
+        name: "sonar"
+        group: "sonar"
+        createhome: no
+        shell: "/sbin/nologin"
+        comment: "SonarQube System user"
+        state: present
+    
+    - name: Download and extract sonarqube directory
+      ansible.builtin.unarchive:
+        src: https://binaries.sonarsource.com/Distribution/sonarqube/sonarqube-9.4.0.54424.zip
+        dest: /opt/
+        owner: sonar
+        group: sonar
+        remote_src: yes
+
+    - name: Rename folder Sonarqube
+      command: mv /opt/sonarqube-9.4.0.54424 /opt/sonarqube
+    
+    - name: Add username postgres
+      ansible.builtin.lineinfile:
+        path: /opt/sonarqube/conf/sonar.properties
+        regexp: '^#sonar.jdbc.username= '
+        line: sonar.jdbc.username=sonarqube
+
+    - name: Add password postgres
+      ansible.builtin.lineinfile:
+        path: /opt/sonarqube/conf/sonar.properties
+        regexp: '^#sonar.jdbc.password= '
+        line: sonar.jdbc.password=senha123senha
+
+    - name: Add database postgres
+      ansible.builtin.lineinfile:
+        path: /opt/sonarqube/conf/sonar.properties
+        regexp: '^#sonar.jdbc.url=jdbc:postgresql: '
+        line: sonar.jdbc.url=jdbc:postgresql://localhost/sonardb
+
+    - name: Add user run sonar.sh
+      ansible.builtin.lineinfile:
+        path: /opt/sonarqube/bin/linux-x86-64/sonar.sh
+        regexp: '^#RUN_AS_USER='
+        line: RUN_AS_USER=sonar
+
+    - name: Copy file sonar.service
+      ansible.builtin.copy:
+        src: sonar.service
+        dest: /etc/systemd/system/
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Enable Sonar Service
+      systemd:
+        name: sonar
+        enabled: yes 
+    
+    - name: Start Sonar Service
+      systemd:
+        name: sonar
+        state: started
+
+    - name: Restart Sonar
+      systemd:
+        name: sonar
+        state: restarted
+
+    - name: Add a line 1 in file sysctl
+      ansible.builtin.lineinfile:
+        path: /etc/sysctl.conf
+        line: vm.max_map_count=262144
+        create: yes
+
+    - name: Add a line 2 in file sysctl
+      ansible.builtin.lineinfile:
+        path: /etc/sysctl.conf
+        line: fs.file-max=65536
+        create: yes
+
+    - name: Add a line 3 in file sysctl
+      ansible.builtin.lineinfile:
+        path: /etc/sysctl.conf
+        line: ulimit -n 65536
+        create: yes
+
+    - name: Add a line 4 in file sysctl
+      ansible.builtin.lineinfile:
+        path: /etc/sysctl.conf
+        line: ulimit -u 4096
+        create: yes
+
+    - name: Reboot machine
+      reboot:
+# reboot machine
